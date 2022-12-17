@@ -57,6 +57,7 @@ public class OrderServiceApplication {
                                 .quantity(1 + random.nextInt(10))
                                 .discount(Math.random())
                                 .build();
+                        productItemRepository.save(productItem);
                     }
                 }
             }

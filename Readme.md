@@ -26,7 +26,9 @@ next is adding the path / link in config service `application.properties`
 
 the git repo should be an external repository (Outside the microservice)
 
-after running the service we can see it in the consul services ![](pictures/4.png)
+after running the service using the dommand : `consul agent -server -bootstrap-expect=1 -data-dir=consul-data -ui -bind=192.168.1.18`
+
+we can see it in the consul services ![](pictures/4.png)
 
 if doesn't show up add this annotation in the ConfigService class `@EnableDiscoveryClient`
 
@@ -177,3 +179,68 @@ necessary dependency
 ```
 ## inventory service
 ## order service
+ 
+ to log information on requests add application.properties in the orderService : 
+ ```properties
+logging.level.ma.laayouni.orderservice.services.CustomerRestClientService=debug
+logging.level.ma.laayouni.orderservice.services.InventoryRestClientService=debug
+feign.client.config.default.logger-level=full
+```
+- Order projection :
+```java
+@Projection(name = "fullOrder",types = Order.class)
+public interface OrderProjection {
+    Long getId();
+    Date getCreatedAt();
+    Long getCustomerId();
+    OrderStatus getStatus();
+}
+```
+`http://localhost:9999/order-service/orders/search/byCustomerId?customerId=1&projection=fullOrder`
+
+## billing service (trying vault)
+```java
+@RestController
+public class ConsulConfigRestController {
+
+    @Autowired
+    private MyConsulConfig myConsulConfig;
+ 
+    @GetMapping("/myConfig")
+    public MyConsulConfig myConfig(){
+        return myConsulConfig;
+    }
+}
+```
+```java
+@Component
+@ConfigurationProperties(prefix ="token")
+@Data
+public class MyConsulConfig {
+    private long accessTokenTimeout;
+    private long refreshTokenTimeout;
+
+}
+```
+- Start vault with :`vault server -dev`
+- set vault address :`set VAULT_ADDR="http://127.0.0.1:8200"`
+- add key value :`vault.exe kv put secret/billing-service user.username=mouad user.password=12345678` 
+How can a microservice access this data ?
+- add these properties to the service :
+   ```properties
+   spring.cloud.vault.token=hvs.e7VE39m7Jw7m9fRnRig5061G
+   spring.cloud.vault.scheme=http
+   spring.cloud.vault.kv.enabled=true
+   spring.config.import=optional:consul:, vault://
+   management.endpoints.web.exposure.include=*
+  ```
+- token can be found when starting vault : ![](pictures/9.png)
+
+# Frontend Angular
+(WIP)
+- Product display
+![](pictures/10.png)
+- Customer displqy
+![](pictures/11.png)
+- Orders be Customer
+![](pictures/12.png)
